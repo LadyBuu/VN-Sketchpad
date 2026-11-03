@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VN Sketchpad</title>
+<style>
+:root{--bg:#0e1116;--panel:#161b22;--panel2:#1c2330;--line:#2a3344;--txt:#e6edf3;--dim:#8b98a9;--acc:#7aa2f7;--acc2:#bb9af7;--ok:#7ee787;--warn:#e3b341;--bad:#ff7b72}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column}
+button,input,select,textarea{font:inherit;color:var(--txt)}
+input,select,textarea{background:#0b0f14;border:1px solid var(--line);border-radius:8px;padding:6px 9px;min-width:0}
+input:focus,select:focus,textarea:focus{outline:1px solid var(--acc);border-color:var(--acc)}
+input[type=checkbox]{width:auto}
+input[type=color]{padding:0;width:38px;height:30px}
+textarea{width:100%;resize:vertical;min-height:90px}
+button{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+button:hover:not(:disabled){border-color:var(--acc)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.pri{background:#2b3f73;border-color:#3d57a0}
+button.mini{padding:2px 8px;font-size:12px}
+button.x{padding:2px 8px;color:var(--bad);background:transparent}
+button.big{padding:10px 14px;font-weight:600;background:#2b3f73;border-color:#3d57a0}
+#top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel)}
+#top .title{font-weight:700;font-size:15px;width:210px}
+#saved{color:var(--dim);font-size:12px;margin-left:auto}
+#tabs{display:flex;gap:2px;padding:6px 14px 0;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{border:none;border-radius:8px 8px 0 0;background:transparent;color:var(--dim);padding:8px 14px;white-space:nowrap}
+.tab.on{background:var(--panel);color:var(--acc);box-shadow:inset 0 -2px var(--acc)}
+#main{flex:1;min-height:0;display:grid;grid-template-columns:1fr}
+body.play-open #main{grid-template-columns:minmax(0,1fr) 440px}
+#editor{overflow:auto;padding:16px 18px 60px}
+#play{display:none;flex-direction:column;border-left:1px solid var(--line);background:var(--panel);min-height:0}
+body.play-open #play{display:flex}
+@media(max-width:900px){body.play-open #main{grid-template-columns:1fr}body.play-open #play{position:fixed;inset:0;z-index:50}}
+.split{display:grid;grid-template-columns:230px minmax(0,1fr);gap:16px}
+@media(max-width:700px){.split{grid-template-columns:1fr}}
+.list{display:flex;flex-direction:column;gap:4px}
+.li{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent;background:var(--panel)}
+.li:hover{border-color:var(--line)}
+.li.on{border-color:var(--acc);background:var(--panel2)}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.card.sub{background:#12171f;margin:8px 0}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:5px 0}
+.grow{flex:1;min-width:120px}
+.dim{color:var(--dim)}
+small,.hint{color:var(--dim);font-size:12px}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--dim)}
+h2{font-size:16px;margin:0 0 10px}
+h3{font-size:12px;margin:14px 0 4px;color:var(--acc2);text-transform:uppercase;letter-spacing:.06em}
+label.chk{display:flex;gap:5px;align-items:center;color:var(--dim)}
+.cond,.fxs{border-left:2px solid var(--line);padding-left:10px;margin:8px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.chip{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:1px 9px;margin:2px;font-size:12px}
+.chip.item{border-color:#5a4a1d;color:var(--warn)}
+.msg{padding:6px 10px;border-radius:8px;margin:4px 0;font-size:13px;background:var(--panel)}
+.msg.bad{border-left:3px solid var(--bad)}.msg.warn{border-left:3px solid var(--warn)}.msg.ok{border-left:3px solid var(--ok)}
+.msg a{color:var(--acc);cursor:pointer;text-decoration:underline}
+table{border-collapse:collapse;width:100%;font-size:13px}
+td,th{border-bottom:1px solid var(--line);padding:4px 8px;text-align:left}
+#mapwrap{overflow:auto;background:#0b0f14;border:1px solid var(--line);border-radius:12px;max-height:62vh}
+.node{cursor:pointer}.node rect{stroke-width:1.5}.node text{fill:#e6edf3;font-size:12px;pointer-events:none}
+/* play */
+#phead{display:flex;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+#hud{padding:6px 10px;border-bottom:1px solid var(--line);max-height:96px;overflow:auto}
+#dbg{padding:8px 10px;border-bottom:1px solid var(--line);max-height:34vh;overflow:auto;background:#12171f;font-size:12px}
+#log{flex:1;overflow:auto;padding:12px 14px;min-height:0}
+#ctl{padding:10px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px;max-height:48%;overflow:auto}
+.lg-scene{color:var(--acc2);text-align:center;margin:14px 0 8px;font-size:12px;letter-spacing:.05em}
+.lg-line{margin:6px 0}.who{font-weight:700;margin-right:8px}
+.lg-fx{color:var(--ok);font-size:12px;margin:2px 0 2px 10px;opacity:.85}
+.lg-choice{color:var(--acc);margin:8px 0 2px;font-style:italic}
+.lg-end{margin:16px 0;padding:12px;border:1px solid var(--warn);border-radius:10px;background:#1d1a10}
+.choice{text-align:left;padding:9px 12px}.choice.locked{opacity:.5}
+.shop{background:#12171f;border:1px solid var(--line);border-radius:10px;padding:8px}
+.shoprow{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:3px 0}
+.warnbox{color:var(--warn);font-size:13px}
+.end-banner{text-align:center;font-weight:700;color:var(--warn)}
+</style>
+</head>
+<body>
+<div id="top">
+  <input class="title" data-b="title" placeholder="Project title">
+  <button class="pri" data-a="play">▶ Playtest</button>
+  <button data-a="exportRpy">⬇ Ren'Py (.rpy)</button>
+  <button data-a="exportJson">⬇ JSON</button>
+  <button data-a="importJson">⬆ Import</button>
+  <button data-a="demo">Load demo</button>
+  <button data-a="newProject">New</button>
+  <input type="file" id="file" accept=".json" style="display:none">
+  <span id="saved"></span>
+</div>
+<div id="tabs"></div>
+<div id="main">
+  <div id="editor"></div>
+  <div id="play">
+    <div id="phead">
+      <b style="margin-right:auto">Playtest</b>
+      <button class="mini" data-a="back">◂ Back</button>
+      <button class="mini" data-a="restart">↻ Restart</button>
+      <button class="mini" data-a="dbgToggle">🐞 Debug</button>
+      <button class="mini" data-a="closePlay">✕</button>
+    </div>
+    <div id="hud"></div>
+    <div id="dbg" style="display:none"></div>
+    <div id="log"></div>
+    <div id="ctl"></div>
+  </div>
+</div>
+
+<script>
+//#CORE-START
+const RESERVED=new Set(('break case catch class const continue debugger default delete do else enum export extends false finally for function if import in instanceof new null return super switch this throw true try typeof var void while with yield let static await async has count visited clamp min max floor ceil round abs S and or not is pass from lambda none as del elif except global nonlocal print raise inventory once_used shop_stock visited_scenes persistent day slot when missed t_now time_up').split(' '));
+const slug=s=>{let x=String(s).toLowerCase().trim().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');if(!x)x='x';if(/^\d/.test(x)||RESERVED.has(x))x='v_'+x;return x};
+const uid=()=>Math.random().toString(36).slice(2,8);
+function uniq(base,taken){let b=base,i=2;while(taken.includes(b))b=base+'_'+i++;return b}
+function blank(){return {title:'Untitled VN',start:'',time:{on:false,days:3,slotsText:'Morning, Afternoon, Evening',end:''},chars:[],vars:[{key:'gold',name:'Gold',type:'number',init:0,min:0,max:'',owner:'',expr:'',show:true}],items:[],shops:[],scenes:[],endings:[]}}
+let P=blank(); let st=null;
+
+function normalize(p){
+  p.chars=p.chars||[];p.vars=p.vars||[];p.items=p.items||[];p.shops=p.shops||[];p.scenes=p.scenes||[];p.endings=p.endings||[];p.title=p.title||'Untitled VN';p.start=p.start||'';p.time=Object.assign({on:false,days:3,slotsText:'Morning, Afternoon, Evening',end:''},p.time||{});
+  p.vars.forEach(v=>{v.type=v.type||'number';v.init??=(v.type==='bool'?'false':0);v.min??='';v.max??='';v.owner??='';v.expr??='';if(v.show===undefined)v.show=true});
+  p.chars.forEach(c=>{c.color=c.color||'#9ece6a';c.notes??=''});
+  p.items.forEach(i=>{i.desc??='';i.price??=0;i.start??=0});
+  p.shops.forEach(s=>{s.currency=s.currency||'gold';s.sell??=50;s.stock=s.stock||[]});
+  const fl=o=>{o.conds=o.conds||[];o.cmode=o.cmode||'all'};
+  p.scenes.forEach(s=>{fl(s);s.winFrom??='';s.winTo??='';s.hub=!!s.hub;s.forced=!!s.forced;s.repeat=!!s.repeat;s.adv??=0;s.waitText??='';s.listText??='';s.chapter??='';s.text??='';s.note??='';s.shop??='';s.fx=s.fx||[];s.choices=s.choices||[];s.next=s.next||[];
+    s.choices.forEach(c=>{c.id=c.id||uid();c.target??='';c.locked=c.locked||'hide';c.once=!!c.once;c.fx=c.fx||[];fl(c)});s.next.forEach(fl)});
+  p.endings.forEach(e=>{e.text??='';e.priority??=0;e.fallback=!!e.fallback;fl(e)});
+  return p;
+}
+
+const varByKey=k=>P.vars.find(v=>v.key===k);
+const itemById=i=>P.items.find(x=>x.id===i);
+const sceneById=i=>P.scenes.find(x=>x.id===i);
+const endById=i=>P.endings.find(x=>x.id===i);
+const charById=i=>P.chars.find(x=>x.id===i);
+const charByName=n=>{const l=String(n).trim().toLowerCase();return P.chars.find(c=>c.name.toLowerCase()===l||c.id===l)};
+const vlabel=v=>{const c=v.owner&&charById(v.owner);return (c?c.name+' · ':'')+v.name};
+const slotNames=()=>{const a=String(P.time.slotsText||'').split(',').map(x=>x.trim()).filter(Boolean);return a.length?a:['Day']};
+const NS=()=>slotNames().length;
+const totalT=()=>Math.max(1,Math.min(60,Math.floor(Number(P.time.days))||1))*NS();
+const timeLabel=t=>t>=totalT()?'Time up':'Day '+(Math.floor(t/NS())+1)+' · '+slotNames()[t%NS()];
+const timeOpts=()=>Array.from({length:totalT()},(_,i)=>[i,timeLabel(i)]);
+
+function clampV(v,n){
+  if(v.type!=='number')return n;
+  if(v.min!==''&&v.min!=null&&!isNaN(Number(v.min)))n=Math.max(Number(v.min),n);
+  if(v.max!==''&&v.max!=null&&!isNaN(Number(v.max)))n=Math.min(Number(v.max),n);
+  return n;
+}
+function initVal(v){
+  if(v.type==='bool')return v.init===true||v.init==='true';
+  if(v.type==='string')return String(v.init??'');
+  return clampV(v,Number(v.init)||0);
+}
+function newState(){
+  const s={vars:{},inv:{},visited:{},once:{},stock:{},log:[],scene:null,pending:[],over:null,stuck:null,steps:0,snaps:[],t:0,timeUp:false};
+  P.vars.forEach(v=>{if(v.type!=='formula')s.vars[v.key]=initVal(v)});
+  P.items.forEach(i=>{if(Number(i.start)>0)s.inv[i.id]=Number(i.start)});
+  return s;
+}
+
+/* ---- expressions ---- */
+function makeScope(s){
+  const S={};
+  for(const v of P.vars){
+    if(v.type==='formula')Object.defineProperty(S,v.key,{get(){return evalIn(v.expr||'0',S)},enumerable:true});
+    else S[v.key]=s.vars[v.key];
+  }
+  S.has=i=>(s.inv[i]||0)>0;S.count=i=>s.inv[i]||0;S.visited=i=>!!s.visited[i];
+  S.day=Math.floor(s.t/NS())+1;S.slot=s.t%NS()+1;S.time=s.t;S.when=timeLabel(s.t);S.missed=i=>missedIds(s).includes(i);S.min=Math.min;S.max=Math.max;S.floor=Math.floor;S.ceil=Math.ceil;S.round=Math.round;S.abs=Math.abs;
+  S.clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+  return S;
+}
+function evalIn(expr,S){return new Function('S','with(S){return ('+expr+')}')(S)}
+function ev(s,expr){return evalIn(expr,makeScope(s))}
+function fmt(r){return typeof r==='number'?String(Math.round(r*100)/100):String(r)}
+function interp(s,t){
+  const S=makeScope(s);
+  return String(t||'').replace(/\{([^{}]+)\}/g,(m,e)=>{try{return fmt(evalIn(e,S))}catch(x){return '{?'+e+'}'}});
+}
+
+/* ---- conditions / effects ---- */
+function cmp(a,op,b){switch(op){case '==':return a==b;case '!=':return a!=b;case '>':return a>b;case '>=':return a>=b;case '<':return a<b;case '<=':return a<=b}return false}
+function evalCond(s,S,c){
+  try{
+    if(c.t==='var'){const r=evalIn(String(c.val===''||c.val==null?'0':c.val),S);return cmp(S[c.key],c.op,r)}
+    if(c.t==='item')return cmp(s.inv[c.id]||0,c.op,Number(c.val)||0);
+    if(c.t==='visited')return c.op==='unseen'?!s.visited[c.id]:!!s.visited[c.id];
+    if(c.t==='time')return cmp(s.t,c.op,Number(c.val)||0);
+    if(c.t==='missed'){const m=missedIds(s).includes(c.id);return c.op==='notmissed'?!m:m}
+    if(c.t==='expr')return !!evalIn(c.expr||'true',S);
+  }catch(e){if(s.warn)s.warn.add('Condition error: '+e.message);return false}
+  return true;
+}
+function condsOk(s,o){
+  const L=o.conds||[];if(!L.length)return true;
+  const S=makeScope(s);
+  return o.cmode==='any'?L.some(c=>evalCond(s,S,c)):L.every(c=>evalCond(s,S,c));
+}
+function describeCond(c){
+  if(c.t==='var'){const v=varByKey(c.key);return (v?vlabel(v):c.key)+' '+c.op+' '+c.val}
+  if(c.t==='item'){const i=itemById(c.id);return (i?i.name:c.id)+' '+c.op+' '+c.val}
+  if(c.t==='visited'){const sc=sceneById(c.id);return (c.op==='unseen'?'not seen ':'seen ')+(sc?sc.name:c.id)}
+  if(c.t==='time')return 'time '+c.op+' '+timeLabel(Number(c.val)||0);
+  if(c.t==='missed'){const sc=sceneById(c.id);return (c.op==='notmissed'?'not missed: ':'missed: ')+(sc?sc.name:c.id)}
+  return c.expr;
+}
+const describeConds=o=>(o.conds||[]).map(describeCond).join(o.cmode==='any'?' OR ':' & ');
+
+function applyFx(s,list){
+  const notes=[];
+  for(const e of list||[]){
+    try{
+      if(e.t==='add'||e.t==='set'){
+        const v=varByKey(e.key);if(!v||v.type==='formula')continue;
+        const before=s.vars[e.key];
+        let r=ev(s,String(e.val===''||e.val==null?'0':e.val));
+        if(e.t==='add')r=(Number(before)||0)+Number(r);
+        if(v.type==='number')r=clampV(v,Number(r));else if(v.type==='bool')r=!!r;else r=String(r);
+        s.vars[e.key]=r;
+        if(v.type==='number'&&e.t==='add'){const d=Math.round((r-(Number(before)||0))*100)/100;notes.push(vlabel(v)+' '+(d>=0?'+':'')+d)}
+        else notes.push(vlabel(v)+' = '+fmt(r));
+      }else if(e.t==='give'||e.t==='take'){
+        const it=itemById(e.id);if(!it)continue;const q=Math.max(0,Number(e.qty)||1);
+        if(e.t==='give'){s.inv[e.id]=(s.inv[e.id]||0)+q;notes.push('+'+q+' '+it.name)}
+        else{const had=s.inv[e.id]||0;s.inv[e.id]=Math.max(0,had-q);notes.push('-'+Math.min(q,had)+' '+it.name)}
+      }else if(e.t==='adv'||e.t==='skipto'){
+        if(!P.time.on)continue;
+        const before=new Set(missedIds(s));
+        if(e.t==='adv')s.t=Math.min(totalT(),s.t+Math.max(0,Math.floor(Number(ev(s,String(e.val===''||e.val==null?'1':e.val)))||0)));
+        else s.t=Math.max(s.t,Math.min(totalT(),Number(e.to)||0));
+        notes.push('⏳ '+timeLabel(s.t));
+        missedIds(s).filter(i=>!before.has(i)).forEach(i=>notes.push('✗ missed: '+(sceneById(i)?.name||i)));
+      }
+    }catch(err){notes.push('⚠ '+err.message)}
+  }
+  return notes;
+}
+
+/* ---- flow ---- */
+function L(s,e){if(!s.noLog)s.log.push(e)}
+function parseLines(s,text){
+  const out=[];
+  String(text||'').split('\n').forEach(raw=>{
+    const line=raw.trim();if(!line)return;
+    const m=line.match(/^([^:{}\n]{1,30}):\s*(.+)$/);
+    if(m){
+      const c=charByName(m[1]);
+      if(c){out.push({who:c,text:interp(s,m[2])});return}
+      if(/^(narrator|narration)$/i.test(m[1].trim())){out.push({who:null,text:interp(s,m[2])});return}
+    }
+    out.push({who:null,text:interp(s,line)});
+  });
+  return out;
+}
+function pickEnding(s){
+  const ord=P.endings.map((e,i)=>({e,i})).sort((a,b)=>(Number(b.e.priority)||0)-(Number(a.e.priority)||0)||a.i-b.i).map(x=>x.e);
+  return ord.find(e=>!e.fallback&&condsOk(s,e))||ord.find(e=>e.fallback)||null;
+}
+function finish(s,e){
+  s.scene=null;s.pending=[];s.over={id:e.id,name:e.name};s.visited['end:'+e.id]=true;
+  L(s,{k:'end',name:e.name,text:s.noLog?'':interp(s,e.text)});
+}
+function enter(s,target){
+  s.over=null;s.pending=[];s.stuck=null;
+  target=timeRedirect(s,target);
+  if(!target){s.stuck='choice/rule has no target';L(s,{k:'sys',text:'⚠ That link has no target.'});return}
+  if(target==='@calc'){
+    const e=pickEnding(s);
+    if(!e){s.scene=null;s.stuck='ending calculation matched nothing (add a fallback ending)';L(s,{k:'sys',text:'⚠ '+s.stuck});return}
+    return finish(s,e);
+  }
+  if(target.startsWith('end:')){
+    const e=endById(target.slice(4));
+    if(!e){s.stuck='missing ending '+target;L(s,{k:'sys',text:'⚠ '+s.stuck});return}
+    return finish(s,e);
+  }
+  const sc=sceneById(target);
+  if(!sc){s.scene=null;s.stuck='missing scene "'+target+'"';L(s,{k:'sys',text:'⚠ '+s.stuck});return}
+  s.scene=sc.id;s.visited[sc.id]=true;s.steps++;
+  L(s,{k:'scene',name:sc.name,chapter:sc.chapter,when:P.time.on?timeLabel(s.t):''});
+  applyFx(s,sc.fx).forEach(n=>L(s,{k:'fx',text:n}));
+  if(!s.noLog)s.pending=parseLines(s,sc.text);
+}
+const isEvent=sc=>(sc.winFrom!==''&&sc.winFrom!=null)||(sc.winTo!==''&&sc.winTo!=null);
+const wTo=e=>(e.winTo===''||e.winTo==null)?1e9:Number(e.winTo);
+function inWin(s,sc){
+  const a=(sc.winFrom===''||sc.winFrom==null)?0:Number(sc.winFrom),b=(sc.winTo===''||sc.winTo==null)?Infinity:Number(sc.winTo);
+  return s.t>=a&&s.t<=b;
+}
+function eventsFor(s,hub){
+  if(!P.time.on)return [];
+  return P.scenes.filter(e=>e.id!==hub.id&&!e.hub&&isEvent(e)&&inWin(s,e)&&(e.repeat||!s.visited[e.id])&&condsOk(s,e));
+}
+function missedIds(s){
+  if(!P.time.on)return [];
+  return P.scenes.filter(e=>!e.hub&&e.winTo!==''&&e.winTo!=null&&!s.visited[e.id]&&s.t>Number(e.winTo)).map(e=>e.id);
+}
+function timeRedirect(s,target){
+  if(!P.time.on)return target;
+  if(s.t>=totalT()&&!s.timeUp&&P.time.end){s.timeUp=true;L(s,{k:'sys',text:'⏳ Time has run out.'});return P.time.end}
+  const hub=sceneById(target);
+  if(hub&&hub.hub){
+    const f=eventsFor(s,hub).filter(e=>e.forced).sort((a,b)=>wTo(a)-wTo(b))[0];
+    if(f){L(s,{k:'sys',text:'⚡ Event: '+f.name});return f.id}
+  }
+  return target;
+}
+function choiceStates(s,sc){
+  const out=(sc.choices||[]).map(c=>{const used=c.once&&s.once[sc.id+'|'+c.id];return {c,used,ok:!used&&condsOk(s,c)}});
+  if(sc.hub&&P.time.on){
+    const dyn=(id,text,target,fx)=>({c:{id,text,target,locked:'hide',once:false,fx,conds:[],cmode:'all'},used:false,ok:true});
+    eventsFor(s,sc).forEach(e=>out.push(dyn('ev:'+e.id,e.listText||e.name,e.id,[])));
+    if(sc.waitText)out.push(dyn('wait',sc.waitText,sc.id,[{t:'adv',val:'1'}]));
+  }
+  return out;
+}
+function leave(s,sc){
+  const n=Number(sc.adv)||0;
+  if(P.time.on&&n>0)applyFx(s,[{t:'adv',val:String(n)}]).forEach(x=>L(s,{k:'fx',text:x}));
+}
+function pickChoice(s,sc,cid){
+  const x=choiceStates(s,sc).find(y=>y.c.id===cid);if(!x)return;const c=x.c;
+  if(c.once)s.once[sc.id+'|'+c.id]=1;
+  L(s,{k:'choice',text:interp(s,c.text)});
+  applyFx(s,c.fx).forEach(n=>L(s,{k:'fx',text:n}));
+  leave(s,sc);
+  enter(s,c.target);
+}
+function resolveNext(s,sc){for(const r of sc.next||[]){if(condsOk(s,r))return r}return null}
+function goNext(s,sc,r){leave(s,sc);enter(s,r.target)}
+
+/* ---- shops ---- */
+const qtyOf=it=>(it.qty===''||it.qty==null)?-1:Number(it.qty);
+function qtyLeft(s,sh,it){const k=sh.id+'|'+it.item;return s.stock[k]!==undefined?s.stock[k]:qtyOf(it)}
+function canBuy(s,sh,it){const cur=sh.currency||'gold';return !!itemById(it.item)&&(Number(s.vars[cur])||0)>=(Number(it.price)||0)&&qtyLeft(s,sh,it)!==0}
+function doBuy(s,sh,it){
+  if(!canBuy(s,sh,it))return null;
+  const cur=sh.currency||'gold',item=itemById(it.item),price=Number(it.price)||0,q=qtyLeft(s,sh,it);
+  s.vars[cur]=(Number(s.vars[cur])||0)-price;s.inv[it.item]=(s.inv[it.item]||0)+1;
+  if(q>0)s.stock[sh.id+'|'+it.item]=q-1;
+  return 'Bought '+item.name+' (−'+price+' '+cur+')';
+}
+const sellPrice=(sh,item)=>Math.floor((Number(item.price)||0)*(Number(sh.sell)||0)/100);
+function doSell(s,sh,id){
+  const item=itemById(id);if(!item||(s.inv[id]||0)<1)return null;
+  const cur=sh.currency||'gold',p=sellPrice(sh,item);
+  s.inv[id]--;s.vars[cur]=(Number(s.vars[cur])||0)+p;
+  return 'Sold '+item.name+' (+'+p+' '+cur+')';
+}
+
+/* ---- simulator ---- */
+function simulate(n,maxSteps=400){
+  const res={runs:n,ends:{},stuck:{},loops:0,steps:0,missed:{}};
+  for(let i=0;i<n;i++){
+    const s=newState();s.noLog=true;enter(s,P.start);
+    let g=0;
+    while(!s.over&&!s.stuck&&g++<maxSteps){
+      const sc=sceneById(s.scene);if(!sc){s.stuck='no scene';break}
+      if(sc.shop){const sh=P.shops.find(x=>x.id===sc.shop);if(sh)sh.stock.forEach(it=>{if(Math.random()<.5)doBuy(s,sh,it)})}
+      const av=choiceStates(s,sc).filter(x=>x.ok);
+      if(av.length)pickChoice(s,sc,av[Math.floor(Math.random()*av.length)].c.id);
+      else{const r=resolveNext(s,sc);if(r&&r.target)goNext(s,sc,r);else{s.stuck='dead end / softlock at "'+sc.name+'"'}}
+    }
+    res.steps+=s.steps;
+    if(s.over&&P.time.on)P.scenes.forEach(sc=>{if(isEvent(sc)&&!sc.hub&&!s.visited[sc.id])res.missed[sc.id]=(res.missed[sc.id]||0)+1});
+    if(s.over){
+      const o=res.ends[s.over.id]||(res.ends[s.over.id]={name:s.over.name,n:0,sums:{}});o.n++;
+      const S=makeScope(s);
+      P.vars.forEach(v=>{if(v.type==='number'||v.type==='formula'){try{o.sums[v.key]=(o.sums[v.key]||0)+Number(S[v.key])}catch(e){}}});
+    }else if(s.stuck)res.stuck[s.stuck]=(res.stuck[s.stuck]||0)+1;
+    else res.loops++;
+  }
+  return res;
+}
+
+/* ---- Ren'Py export ---- */
+function exportRpy(){
+  const fk=new Set(P.vars.filter(v=>v.type==='formula').map(v=>v.key));
+  const py=e=>{
+    let s=String(e??'');
+    s=s.replace(/&&/g,' and ').replace(/\|\|/g,' or ').replace(/!(?!=)/g,'not ').replace(/\btrue\b/g,'True').replace(/\bfalse\b/g,'False').replace(/\bfloor\(/g,'math.floor(').replace(/\bceil\(/g,'math.ceil(');
+    fk.forEach(k=>{s=s.replace(new RegExp('\\b'+k+'\\b','g'),'calc_'+k+'()')});
+    s=s.replace(/\bday\b(?!\s*\()/g,'day()').replace(/\bslot\b(?!\s*\()/g,'slot()').replace(/\bwhen\b(?!\s*\()/g,'time_label()');
+    return s.trim()||'0';
+  };
+  const q=s=>'"'+String(s).replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"';
+  const rtext=t=>'"'+String(t).split(/(\{[^{}]+\})/).map(p=>{
+    if(/^\{[^{}]+\}$/.test(p))return '['+py(p.slice(1,-1))+']';
+    return p.replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\[/g,'[[').replace(/\{/g,'{{').replace(/%/g,'%%');
+  }).join('')+'"';
+  const used=new Set([...P.vars.map(v=>v.key),...RESERVED]);
+  const cvar={};P.chars.forEach(c=>{let n=slug(c.id);if(used.has(n))n+='_c';cvar[c.id]=n;used.add(n)});
+  const lab=t=>!t?null:t==='@calc'?'calc_ending':t.startsWith('end:')?'e_'+t.slice(4):'s_'+t;
+  const pc=c=>{
+    if(c.t==='var')return py(c.key)+' '+c.op+' '+py(c.val===''?'0':c.val);
+    if(c.t==='item')return 'count('+q(c.id)+') '+c.op+' '+(Number(c.val)||0);
+    if(c.t==='visited')return (c.op==='unseen'?'not ':'')+'visited('+q(c.id)+')';
+    if(c.t==='time')return 't_now '+c.op+' '+(Number(c.val)||0);
+    if(c.t==='missed')return (c.op==='notmissed'?'not ':'')+'missed('+q(c.id)+')';
+    return '('+py(c.expr)+')';
+  };
+  const pcs=o=>{const L=(o.conds||[]).map(pc);return L.length?L.join(o.cmode==='any'?' or ':' and '):''};
+  const pfx=(list,ind)=>{
+    const out=[];
+    (list||[]).forEach(e=>{
+      if(e.t==='add'||e.t==='set'){
+        const v=varByKey(e.key);if(!v||v.type==='formula')return;
+        const val=py(e.val===''?'0':e.val);let ex=e.t==='add'?e.key+' + ('+val+')':val;
+        if(v.type==='number'){
+          const lo=v.min!==''&&!isNaN(Number(v.min)),hi=v.max!==''&&!isNaN(Number(v.max));
+          if(lo||hi)ex='clamp('+ex+', '+(lo?Number(v.min):'None')+', '+(hi?Number(v.max):'None')+')';
+        }
+        out.push(ind+'$ '+e.key+' = '+ex);
+      }else if(e.t==='give')out.push(ind+'$ inventory['+q(e.id)+'] = inventory.get('+q(e.id)+', 0) + '+(Number(e.qty)||1));
+      else if(e.t==='take')out.push(ind+'$ inventory['+q(e.id)+'] = max(0, inventory.get('+q(e.id)+', 0) - '+(Number(e.qty)||1)+')');
+      else if(e.t==='adv')out.push(ind+'$ t_now = min(t_now + ('+py(e.val===''?'1':e.val)+'), TOTAL)');
+      else if(e.t==='skipto')out.push(ind+'$ t_now = max(t_now, '+(Number(e.to)||0)+')');
+    });
+    return out;
+  };
+  const textLines=(text,ind)=>{
+    const out=[];
+    String(text||'').split('\n').forEach(raw=>{
+      const line=raw.trim();if(!line)return;
+      const m=line.match(/^([^:{}\n]{1,30}):\s*(.+)$/);
+      if(m){const c=charByName(m[1]);if(c){out.push(ind+cvar[c.id]+' '+rtext(m[2]));return}if(/^(narrator|narration)$/i.test(m[1].trim())){out.push(ind+rtext(m[2]));return}}
+      out.push(ind+rtext(line));
+    });
+    return out;
+  };
+  const o=[];
+  o.push('# Generated by VN Sketchpad — '+P.title,'# Notes: expressions are converted from JS-ish to Python (&&,||,!,true/false). Ternaries (a ? b : c) are not converted.','# "show greyed-out" locked choices become hidden menu items in Ren\'Py.','');
+  P.chars.forEach(c=>o.push('define '+cvar[c.id]+' = Character('+q(c.name)+', color='+q(c.color)+')'));
+  o.push('');
+  P.vars.forEach(v=>{
+    if(v.type==='formula')return;
+    const val=v.type==='bool'?(initVal(v)?'True':'False'):v.type==='string'?q(initVal(v)):initVal(v);
+    o.push('default '+v.key+' = '+val);
+  });
+  o.push('default inventory = {'+P.items.filter(i=>Number(i.start)>0).map(i=>q(i.id)+': '+Number(i.start)).join(', ')+'}','default visited_scenes = set()','default once_used = set()','default shop_stock = {}','default t_now = 0','default time_up = False','');
+  o.push('init python:','    import math','    def has(i): return inventory.get(i, 0) > 0','    def count(i): return inventory.get(i, 0)','    def visited(i): return i in visited_scenes',
+    '    def clamp(x, lo=None, hi=None):','        if lo is not None: x = max(lo, x)','        if hi is not None: x = min(hi, x)','        return x');
+  P.vars.filter(v=>v.type==='formula').forEach(v=>o.push('    def calc_'+v.key+'(): return '+py(v.expr)));
+  o.push('    NS = '+NS(),'    TOTAL = '+totalT(),'    SLOTS = ['+slotNames().map(q).join(', ')+']');
+  o.push('    WIN = {'+P.scenes.filter(isEvent).map(e=>q(e.id)+': ('+((e.winFrom===''||e.winFrom==null)?0:Number(e.winFrom))+', '+((e.winTo===''||e.winTo==null)?'None':Number(e.winTo))+')').join(', ')+'}');
+  o.push('    def day(): return t_now // NS + 1','    def slot(): return t_now % NS + 1','    def time_label():','        return "Time up" if t_now >= TOTAL else "Day %d, %s" % (t_now // NS + 1, SLOTS[t_now % NS])','    def missed(i):','        w = WIN.get(i)','        return bool(w) and w[1] is not None and t_now > w[1] and i not in visited_scenes');
+  o.push('','label start:','    jump s_'+(P.start||'MISSING_START'),'');
+  const nz=v=>(v===''||v==null)?null:Number(v);
+  P.scenes.forEach(sc=>{
+    const T=P.time.on;
+    const endLab=T&&P.time.end?lab(P.time.end):null;
+    const tcheck=ind=>endLab?[ind+'if t_now >= TOTAL and not time_up:',ind+'    $ time_up = True',ind+'    jump '+endLab]:[];
+    const leave=ind=>(T&&(Number(sc.adv)||0)>0)?[ind+'$ t_now = min(t_now + '+(Number(sc.adv)||0)+', TOTAL)']:[];
+    const fxTime=list=>(list||[]).some(e=>e.t==='adv'||e.t==='skipto');
+    const timed=list=>T&&((Number(sc.adv)||0)>0||fxTime(list));
+    const avail=e=>{const c=['t_now >= '+(nz(e.winFrom)??0)];if(nz(e.winTo)!==null)c.push('t_now <= '+nz(e.winTo));if(!e.repeat)c.push(q(e.id)+' not in visited_scenes');const x=pcs(e);if(x)c.push('('+x+')');return c.join(' and ')};
+    const evs=(sc.hub&&T)?P.scenes.filter(e=>e.id!==sc.id&&!e.hub&&isEvent(e)):[];
+    o.push('label s_'+sc.id+':');
+    if(sc.hub&&T)evs.filter(e=>e.forced).sort((a,b)=>(nz(a.winTo)??1e9)-(nz(b.winTo)??1e9)).forEach(e=>o.push('    if '+avail(e)+':','        jump s_'+e.id));
+    o.push('    $ visited_scenes.add('+q(sc.id)+')');
+    o.push(...pfx(sc.fx,'    '));
+    if(T&&fxTime(sc.fx))o.push(...tcheck('    '));
+    o.push(...textLines(sc.text,'    '));
+    if(sc.shop&&P.shops.some(s=>s.id===sc.shop))o.push('    call shop_'+sc.shop);
+    const waitOn=!!(sc.hub&&T&&sc.waitText);
+    if(sc.choices.length||evs.length||waitOn){
+      o.push('    menu:');
+      const I='            ';
+      sc.choices.forEach(c=>{
+        const conds=[];const pcx=pcs(c);if(pcx)conds.push('('+pcx+')');
+        if(c.once)conds.push('('+q(sc.id+'|'+c.id)+' not in once_used)');
+        o.push('        '+rtext(c.text)+(conds.length?' if '+conds.join(' and '):'')+':');
+        if(c.once)o.push(I+'$ once_used.add('+q(sc.id+'|'+c.id)+')');
+        o.push(...pfx(c.fx,I));
+        o.push(...leave(I));
+        if(timed(c.fx))o.push(...tcheck(I));
+        const l=lab(c.target);o.push(l?I+'jump '+l:I+'pass  # TODO: no target');
+      });
+      evs.forEach(e=>{
+        o.push('        '+rtext(e.listText||e.name)+' if '+avail(e)+':');
+        o.push(...leave(I));
+        if(timed([]))o.push(...tcheck(I));
+        o.push(I+'jump s_'+e.id);
+      });
+      if(waitOn){
+        o.push('        '+rtext(sc.waitText)+':',I+'$ t_now = min(t_now + 1, TOTAL)');
+        o.push(...tcheck(I));
+        o.push(I+'jump s_'+sc.id);
+      }
+      if(evs.length)o.push('    # NOTE: Ren\'Py needs at least one visible menu item, so give hubs a "pass time" button.');
+      if(sc.next.length)o.push('    # NOTE: this scene also has "then go to" rules; Ren\'Py menus need at least one visible choice.');
+    }else if(sc.next.length){
+      let defaulted=false;
+      sc.next.forEach(r=>{
+        const l=lab(r.target)||'MISSING_TARGET',c=pcs(r);
+        const pre=ind=>[...leave(ind),...(timed([])?tcheck(ind):[])];
+        if(c)o.push('    if '+c+':',...pre('        '),'        jump '+l);
+        else if(!defaulted){o.push(...pre('    '),'    jump '+l);defaulted=true}
+      });
+      if(!defaulted)o.push('    return  # no default route matched');
+    }else o.push('    return  # dead end: no choices, no next');
+    o.push('');
+  });
+  P.shops.forEach(sh=>{
+    const cur=sh.currency||'gold';
+    o.push('label shop_'+sh.id+':','    menu:');
+    sh.stock.forEach(it=>{
+      const item=itemById(it.item);if(!item)return;
+      const price=Number(it.price)||0,qn=qtyOf(it),key=q(sh.id+'|'+it.item);
+      const cond=[cur+' >= '+price];if(qn>=0)cond.push('shop_stock.get('+key+', '+qn+') > 0');
+      o.push('        '+q('Buy '+item.name+' ('+price+')')+' if '+cond.join(' and ')+':','            $ '+cur+' -= '+price,'            $ inventory['+q(it.item)+'] = inventory.get('+q(it.item)+', 0) + 1');
+      if(qn>=0)o.push('            $ shop_stock['+key+'] = shop_stock.get('+key+', '+qn+') - 1');
+      o.push('            jump shop_'+sh.id);
+    });
+    if(Number(sh.sell)>0)P.items.forEach(item=>{
+      const p=sellPrice(sh,item);
+      o.push('        '+q('Sell '+item.name+' (+'+p+')')+' if inventory.get('+q(item.id)+', 0) > 0:','            $ inventory['+q(item.id)+'] -= 1','            $ '+cur+' += '+p,'            jump shop_'+sh.id);
+    });
+    o.push('        "Leave the shop":','            return','');
+  });
+  const ord=P.endings.map((e,i)=>({e,i})).sort((a,b)=>(Number(b.e.priority)||0)-(Number(a.e.priority)||0)||a.i-b.i).map(x=>x.e);
+  o.push('label calc_ending:');
+  ord.filter(e=>!e.fallback).forEach(e=>{const c=pcs(e);o.push(c?'    if '+c+':':'    if True:','        jump e_'+e.id)});
+  const fb=ord.find(e=>e.fallback);o.push(fb?'    jump e_'+fb.id:'    return  # no fallback ending defined','');
+  P.endings.forEach(e=>{
+    o.push('label e_'+e.id+':','    $ persistent.ending_'+e.id+' = True','    '+q('— ENDING: '+e.name+' —'));
+    o.push(...textLines(e.text,'    '));
+    o.push('    return','');
+  });
+  return o.join('\n');
+}
+
+/* ---- demo ---- */
+function demoProject(){
+  const p=blank();p.title='Night Market (demo)';
+  p.time={on:true,days:3,slotsText:'Morning, Afternoon, Evening',end:'@calc'};
+  p.chars=[{id:'kika',name:'Kika',color:'#7aa2f7',notes:'Police officer'},{id:'mary',name:'Mary',color:'#f7768e',notes:'Transferred from the city'}];
+  p.vars=[
+    {key:'gold',name:'Gold',type:'number',init:20,min:0,max:'',owner:'',expr:'',show:true},
+    {key:'kika_trust',name:'Trust',type:'number',init:0,min:0,max:10,owner:'kika',expr:'',show:true},
+    {key:'mary_trust',name:'Trust',type:'number',init:0,min:0,max:10,owner:'mary',expr:'',show:true},
+    {key:'courage',name:'Courage',type:'number',init:0,min:'',max:'',owner:'',expr:'',show:true},
+    {key:'found_clue',name:'Found clue',type:'bool',init:'false',min:'',max:'',owner:'',expr:'',show:false},
+    {key:'bond',name:'Bond (formula)',type:'formula',init:0,min:'',max:'',owner:'',expr:'kika_trust + mary_trust',show:true}
+  ];
+  p.items=[{id:'lantern',name:'Lantern',desc:'Lights the tunnel',price:15,start:0},{id:'charm',name:'Lucky Charm',desc:'Feels warm',price:10,start:0}];
+  p.shops=[{id:'market',name:'Night Market',currency:'gold',sell:50,stock:[{item:'lantern',price:15,qty:1},{item:'charm',price:10,qty:-1}]}];
+  const C=(text,target,extra={})=>Object.assign({id:uid(),text,target,locked:'hide',once:false,conds:[],cmode:'all',fx:[]},extra);
+  const sc=(id,name,chapter,text,o={})=>Object.assign({id,name,chapter,text,note:'',shop:'',fx:[],choices:[],next:[]},o);
+  const toTown=[{target:'town',conds:[],cmode:'all'}];
+  const toCalc=[{target:'@calc',conds:[],cmode:'all'}];
+  p.scenes=[
+    sc('intro','Intro','Prologue','Narrator: The harbour town never sleeps, and neither do the thieves.\nKika: Lamp oil stolen again. Three days until the inspection. Coming?',{choices:[
+      C('Walk with Kika','town',{fx:[{t:'add',key:'kika_trust',val:'2'}]}),
+      C('Go alone','town',{fx:[{t:'add',key:'courage',val:'1'}]})]}),
+    sc('town','Harbour town','Hub','Narrator: The harbour hums. It is {when}. You have {gold} gold.',{hub:true,waitText:'Let the hours drift by'}),
+    sc('market','Night Market','Day 1','Narrator: Stalls glow under paper lanterns. A lantern might come in handy in a dark tunnel...',{winFrom:0,winTo:2,listText:'Browse the night market',shop:'market',adv:1,next:toTown}),
+    sc('mary_docks','Mary at the docks','Day 1-2','Mary: You\'re late. The tunnel entrance is over there.\nMary: I asked for this transfer, you know. Long story.\nKika: She\'s all right.',{winFrom:1,winTo:4,listText:'Meet Mary at the docks',adv:1,fx:[{t:'add',key:'mary_trust',val:'2'}],next:toTown}),
+    sc('mary_tip','Mary\'s warning','Day 2','Mary: Found you first thing. The smugglers go through the tunnel soon. Tomorrow morning at the latest.',{winFrom:3,winTo:3,forced:true,conds:[{t:'visited',id:'mary_docks',op:'seen'}],fx:[{t:'add',key:'kika_trust',val:'1'}],next:toTown}),
+    sc('tunnel','Lantern light','Day 2-3','Narrator: Lantern light shows scratched symbols, and a dropped ledger.',{winFrom:4,winTo:6,listText:'Enter the tunnel (lantern lit)',conds:[{t:'item',id:'lantern',op:'>=',val:1}],fx:[{t:'set',key:'found_clue',val:'true'},{t:'add',key:'courage',val:'1'}],next:toCalc}),
+    sc('tunnel_blind','Blind in the dark','Day 2-3','Narrator: You stumble. Coins slip out of your pocket.',{winFrom:4,winTo:6,listText:'Stumble into the tunnel blind',conds:[{t:'item',id:'lantern',op:'<',val:1}],fx:[{t:'add',key:'gold',val:'-5'},{t:'add',key:'courage',val:'2'}],next:toCalc})
+  ];
+  p.start='intro';
+  const E=(id,name,text,priority,conds,fallback)=>({id,name,text,priority,conds,cmode:'all',fallback:!!fallback});
+  p.endings=[
+    E('late','The Trail Goes Cold','Narrator: By the time you looked for the tunnel, the smugglers were long gone.',4,[{t:'missed',id:'tunnel',op:'missed'},{t:'missed',id:'tunnel_blind',op:'missed'}]),
+    E('together','Together at Dawn','Kika: Next time we plan better.\nMary: Next time, bring snacks.',3,[{t:'var',key:'bond',op:'>=',val:'3'},{t:'expr',expr:'found_clue'}]),
+    E('bold','Fortune Favours the Bold','Narrator: You walked out alive and strangely proud.',2,[{t:'var',key:'courage',op:'>=',val:'2'}]),
+    E('quiet','A Quiet Dawn','Narrator: Nothing solved. Nothing lost. The tide keeps coming in.',0,[],true)
+  ];
+  return normalize(p);
+}
+//#CORE-END
+
+/* ================= UI ================= */
+const KEY='vn_sketchpad_v1';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const ui={tab:'scenes',scene:null,play:false,dbg:false,sim:null,simN:500};
+const TABS=[['scenes','📖 Scenes'],['chars','🎭 Characters'],['vars','📊 Variables'],['time','⏳ Time'],['items','🎒 Items & Shops'],['endings','🏁 Endings'],['map','🗺 Map & Checks']];
+
+const getPath=p=>p.split('.').reduce((o,k)=>o?.[k],P);
+function setPath(p,v){const ks=p.split('.');const last=ks.pop();ks.reduce((o,k)=>o[k],P)[last]=v}
+let saveT;
+function dirty(){
+  clearTimeout(saveT);
+  saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(P));$('#saved').textContent='autosaved '+new Date().toLocaleTimeString()}catch(e){$('#saved').textContent='⚠ browser storage blocked — use ⬇ JSON to save'}},300);
+}
+function download(name,text,mime){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:mime||'text/plain'}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+
+/* helpers to build form fields */
+const sel=(path,opts,cur,extra='')=>`<select data-b="${path}" ${extra}>`+opts.map(([v,l])=>`<option value="${esc(v)}"${String(v)===String(cur)?' selected':''}>${esc(l)}</option>`).join('')+'</select>';
+const inp=(path,val,ph='',extra='')=>`<input data-b="${path}" value="${esc(val)}" placeholder="${esc(ph)}" ${extra}>`;
+const num=(path,val,ph='',extra='')=>`<input type="number" data-n data-b="${path}" value="${esc(val)}" placeholder="${esc(ph)}" ${extra}>`;
+const chk=(path,val,label)=>`<label class="chk"><input type="checkbox" data-b="${path}" ${val?'checked':''}> ${label}</label>`;
+const varOpts=(f)=>P.vars.filter(f||(()=>true)).map(v=>[v.key,vlabel(v)]);
+const itemOpts=()=>P.items.map(i=>[i.id,i.name]);
+const sceneOpts=()=>P.scenes.map(s=>[s.id,s.name]);
+const targetOpts=()=>[['','— choose target —'],...P.scenes.map(s=>[s.id,'📖 '+s.name]),...P.endings.map(e=>['end:'+e.id,'🏁 '+e.name]),['@calc','⚖ Calculate ending (by rules)']];
+const OPS=[['>=','≥'],['>','>'],['==','='],['!=','≠'],['<','<'],['<=','≤']];
+
+function condBody(p,c){
+  if(c.t==='var')return sel(p+'.key',varOpts(),c.key)+sel(p+'.op',OPS,c.op)+inp(p+'.val',c.val,'value or expr','style="width:110px"');
+  if(c.t==='item')return sel(p+'.id',itemOpts(),c.id)+sel(p+'.op',OPS,c.op)+num(p+'.val',c.val,'','style="width:70px"');
+  if(c.t==='visited')return sel(p+'.id',sceneOpts(),c.id)+sel(p+'.op',[['seen','was seen'],['unseen','not seen yet']],c.op);
+  if(c.t==='time')return '<span class="dim">time</span>'+sel(p+'.op',OPS,c.op)+sel(p+'.val',timeOpts(),c.val);
+  if(c.t==='missed')return sel(p+'.id',sceneOpts(),c.id)+sel(p+'.op',[['missed','has been missed'],['notmissed','not missed']],c.op);
+  return inp(p+'.expr',c.expr,'e.g. kika_trust>=3 && has("lantern")','class="grow"');
+}
+function condEd(op,label='Only if'){
+  const o=getPath(op),L=o.conds;
+  const types=[['var','Variable'],['item','Item count'],['visited','Scene seen'],...(P.time.on?[['time','Time'],['missed','Scene missed']]:[]),['expr','Expression']];
+  let h=`<div class="cond"><div class="row dim">${label} ${L.length>1?sel(op+'.cmode',[['all','ALL of these'],['any','ANY of these']],o.cmode):''}</div>`;
+  L.forEach((c,i)=>{const p=`${op}.conds.${i}`;
+    h+=`<div class="row">${sel(p+'.t',types,c.t,'data-r')}${condBody(p,c)}<button class="x" data-a="del" data-arg="${op}.conds|${i}">✕</button></div>`});
+  return h+`<button class="mini" data-a="add" data-arg="${op}.conds|cond">+ condition</button></div>`;
+}
+function fxEd(op,label='Effects'){
+  const o=getPath(op);
+  const types=[['add','Add to'],['set','Set'],['give','Give item'],['take','Take item'],...(P.time.on?[['adv','Pass time'],['skipto','Skip to time']]:[])];
+  let h=`<div class="fxs"><div class="row dim">${label}</div>`;
+  o.fx.forEach((e,i)=>{const p=`${op}.fx.${i}`;
+    let body;
+    if(e.t==='add'||e.t==='set')body=sel(p+'.key',varOpts(v=>v.type!=='formula'),e.key)+(e.t==='add'?'<span class="dim">by</span>':'<span class="dim">=</span>')+inp(p+'.val',e.val,'number / expr / true','style="width:120px"');
+    else if(e.t==='adv')body=inp(p+'.val',e.val,'1','style="width:70px"')+'<span class="dim">time slot(s)</span>';
+    else if(e.t==='skipto')body=sel(p+'.to',timeOpts(),e.to);
+    else body=sel(p+'.id',itemOpts(),e.id)+'<span class="dim">×</span>'+num(p+'.qty',e.qty,'','style="width:64px"');
+    h+=`<div class="row">${sel(p+'.t',types,e.t,'data-r')}${body}<button class="x" data-a="del" data-arg="${op}.fx|${i}">✕</button></div>`});
+  return h+`<button class="mini" data-a="add" data-arg="${op}.fx|fx">+ effect</button></div>`;
+}
+function timingEd(sp,sc){
+  if(!P.time.on)return `<h3>Timing</h3><div class="hint">Day/time system is off. Turn it on in the ⏳ Time tab to give scenes availability windows.</div>`;
+  const to=timeOpts();
+  return `<h3>⏳ Timing</h3><div class="card sub">
+   <div class="row"><span class="dim">Available from</span>${sel(sp+'.winFrom',[['','(always)'],...to],sc.winFrom)}<span class="dim">until</span>${sel(sp+'.winTo',[['','(no deadline)'],...to],sc.winTo)}</div>
+   <div class="row"><label class="chk"><input type="checkbox" data-b="${sp}.forced" ${sc.forced?'checked':''}> forced (fires by itself when a hub opens)</label><label class="chk"><input type="checkbox" data-b="${sp}.repeat" ${sc.repeat?'checked':''}> repeatable</label><label class="chk"><input type="checkbox" data-r data-b="${sp}.hub" ${sc.hub?'checked':''}> this scene is a hub</label></div>
+   <div class="row"><span class="dim">Menu text</span>${inp(sp+'.listText',sc.listText,sc.name,'class="grow"')}<span class="dim">time cost after scene</span>${num(sp+'.adv',sc.adv,'','style="width:64px"')}</div>
+   ${sc.hub?`<div class="row"><span class="dim">“Pass time” button text (empty = none)</span>${inp(sp+'.waitText',sc.waitText,'e.g. Let the hours drift by','class="grow"')}</div>`:''}
+   ${condEd(sp,'Only available if (miss it by never meeting this)')}
+   <div class="hint">A hub lists every scene whose window is open right now, whose conditions pass, and that hasn't been played. When the window closes first, it's missed for good.</div></div>`;
+}
+function viewTime(){
+  const T=P.time;
+  let h=`<div class="card"><h2>⏳ Days &amp; time</h2><label class="chk"><input type="checkbox" data-r data-b="time.on" ${T.on?'checked':''}> Use days and time slots</label>
+  <div class="hint">Give scenes an availability window in the scene editor. A <b>hub</b> scene lists whatever is available right now. If a window closes and the scene wasn't played, it's <b>missed</b>, and conditions or endings can check that. Direct links ignore windows; only hubs list by time.</div>`;
+  if(T.on)h+=`<div class="row"><span class="dim">Days</span>${num('time.days',T.days,'','style="width:70px" min="1" max="60" data-rr')}<span class="dim">Slots per day</span>${inp('time.slotsText',T.slotsText,'Morning, Afternoon, Evening','class="grow" data-rr')}</div>
+  <div class="row"><span class="dim">When time runs out, go to</span>${sel('time.end',targetOpts(),T.end)}</div>`;
+  h+='</div>';
+  if(!T.on)return h;
+  const ns=NS(),days=totalT()/ns,ev=P.scenes.filter(e=>!e.hub&&isEvent(e)),hubs=P.scenes.filter(e=>e.hub);
+  let tb='<table><tr><th></th>'+slotNames().map(n=>`<th>${esc(n)}</th>`).join('')+'</tr>';
+  for(let d=0;d<days;d++){
+    tb+=`<tr><th>Day ${d+1}</th>`;
+    for(let k=0;k<ns;k++){
+      const t=d*ns+k;
+      const cell=ev.filter(e=>inWin({t},e)).map(e=>`<span class="chip" style="cursor:pointer" data-a="selSceneGo" data-arg="${esc(e.id)}">${e.forced?'⚡ ':''}${esc(e.name)}${String(e.winTo)===String(t)?' ⌛':''}${(e.conds||[]).length?' 🔒':''}</span>`).join('');
+      tb+=`<td>${cell||'<small>—</small>'}</td>`;
+    }
+    tb+='</tr>';
+  }
+  tb+='</table>';
+  return h+`<div class="card"><h2>Timeline</h2><div class="hint" style="margin-bottom:8px">⚡ forced · ⌛ last chance · 🔒 has conditions · click to edit. Hubs: ${hubs.map(x=>esc(x.name)).join(', ')||'<b>none yet (tick “this scene is a hub” on a scene)</b>'}</div>${tb}</div>`;
+}
+
+/* ---- views ---- */
+const chapColor=c=>{if(!c)return '#4b5668';let h=0;for(const ch of c)h=(h*31+ch.charCodeAt(0))%360;return `hsl(${h} 55% 58%)`};
+function viewScenes(){
+  let sc=sceneById(ui.scene)||P.scenes[0];ui.scene=sc?sc.id:null;
+  const list=`<div class="list"><button class="pri" data-a="newScene">+ New scene</button>`+P.scenes.map(s=>`<div class="li ${sc&&s.id===sc.id?'on':''}" data-a="selScene" data-arg="${s.id}"><span class="dot" style="background:${chapColor(s.chapter)}"></span><span data-lf="scenes.${P.scenes.indexOf(s)}.name">${esc(s.name)}</span>${P.start===s.id?' ⭐':''}</div>`).join('')+'</div>';
+  if(!sc)return `<div class="split">${list}<div class="dim">No scenes yet. Make one, or hit “Load demo” to see everything in action.</div></div>`;
+  const sp='scenes.'+P.scenes.indexOf(sc);
+  const form=`<div class="card"><div class="row">${inp(sp+'.name',sc.name,'Scene name','class="grow"')}${inp(sp+'.chapter',sc.chapter,'Route / chapter tag','style="width:170px"')}</div>
+   <div class="row"><span class="mono">id: ${esc(sc.id)}</span><button class="mini" data-a="renameId">rename id</button><button class="mini" data-a="setStart">${P.start===sc.id?'⭐ start scene':'make start'}</button><button class="mini" data-a="dupScene">duplicate</button><button class="mini" data-a="playFrom" data-arg="${sc.id}">▶ play from here</button><button class="x" data-a="delScene">delete</button></div>
+   <h3>Text</h3>
+   <textarea data-b="${sp}.text" rows="7" placeholder="Narration goes here.&#10;Kika: Lines starting with a character name are spoken by them.&#10;Use {gold} or {kika_trust*2} to show values.">${esc(sc.text)}</textarea>
+   <div class="hint">One line = one click. “Name: line” uses a character from the Characters tab. Blank lines are skipped.</div>
+   <h3>On entering this scene</h3>${fxEd(sp,'Effects applied when the scene starts')}
+   <div class="row"><span class="dim">Shop here:</span>${sel(sp+'.shop',[['','— none —'],...P.shops.map(s=>[s.id,s.name])],sc.shop)}</div>
+   ${timingEd(sp,sc)}<h3>Choices</h3>${sc.choices.map((c,i)=>choiceCard(sp,c,i)).join('')||'<div class="hint">No choices — scene will continue via “then go to” rules below.</div>'}
+   <button class="mini" data-a="add" data-arg="${sp}.choices|choice">+ choice</button>
+   <h3>Then go to (used when there are no choices, or none are available)</h3>
+   ${sc.next.map((r,i)=>`<div class="card sub"><div class="row"><span class="dim">→</span>${sel(sp+'.next.'+i+'.target',targetOpts(),r.target)}<button class="mini" data-a="mv" data-arg="${sp}.next|${i}|-1">↑</button><button class="mini" data-a="mv" data-arg="${sp}.next|${i}|1">↓</button><button class="x" data-a="del" data-arg="${sp}.next|${i}">✕</button></div>${condEd(sp+'.next.'+i,'If (empty = always)')}</div>`).join('')}
+   <button class="mini" data-a="add" data-arg="${sp}.next|next">+ rule</button><div class="hint">Rules are checked top to bottom; first match wins. Put the unconditional fallback last.</div>
+   <h3>Author notes</h3><textarea data-b="${sp}.note" rows="2" placeholder="Not exported. For you.">${esc(sc.note)}</textarea></div>`;
+  return `<div class="split">${list}<div>${form}</div></div>`;
+}
+function choiceCard(sp,c,i){
+  const p=`${sp}.choices.${i}`;
+  return `<div class="card sub"><div class="row">${inp(p+'.text',c.text,'Choice text','class="grow"')}<button class="mini" data-a="mv" data-arg="${sp}.choices|${i}|-1">↑</button><button class="mini" data-a="mv" data-arg="${sp}.choices|${i}|1">↓</button><button class="x" data-a="del" data-arg="${sp}.choices|${i}">✕</button></div>
+  <div class="row"><span class="dim">→</span>${sel(p+'.target',targetOpts(),c.target)}${sel(p+'.locked',[['hide','hide when locked'],['show','show greyed out']],c.locked)}${chk(p+'.once',c.once,'one-time')}</div>${condEd(p)}${fxEd(p)}</div>`;
+}
+function viewChars(){
+  return `<button class="pri" data-a="newChar">+ Character</button><div class="grid" style="margin-top:12px">`+P.chars.map((c,i)=>{
+    const p='chars.'+i;const stats=P.vars.filter(v=>v.owner===c.id);
+    return `<div class="card"><div class="row"><input type="color" data-b="${p}.color" value="${esc(c.color)}">${inp(p+'.name',c.name,'Name','class="grow"')}<button class="x" data-a="delChar" data-arg="${c.id}">✕</button></div>
+    <div class="mono">id: ${esc(c.id)} — type “${esc(c.name)}: ...” in scene text</div>
+    <textarea data-b="${p}.notes" rows="2" placeholder="Notes">${esc(c.notes)}</textarea>
+    <h3>Stats / points</h3>${stats.map(v=>`<span class="chip">${esc(v.name)} <small>${v.min!==''||v.max!==''?`[${v.min!==''?v.min:'−∞'}…${v.max!==''?v.max:'∞'}]`:''}</small></span>`).join('')||'<small>none</small>'}
+    <div class="row"><button class="mini" data-a="newStat" data-arg="${c.id}">+ stat (affection, suspicion…)</button></div></div>`}).join('')+'</div>'+(P.chars.length?'':'<div class="dim">Add the people in your story. Stats added here live in the Variables tab too.</div>');
+}
+function viewVars(){
+  return `<div class="row"><button class="pri" data-a="newVar" data-arg="number">+ Number</button><button data-a="newVar" data-arg="bool">+ Flag (true/false)</button><button data-a="newVar" data-arg="string">+ Text</button><button data-a="newVar" data-arg="formula">+ Formula</button></div>
+  <div class="hint">Formulas are computed live from other values, e.g. <span class="mono">kika_trust*2 + courage</span>. Use any variable key in conditions, effects, endings and {text}. Functions: has("item") count("item") visited("scene") min max floor ceil round abs clamp.</div>
+  <div class="grid" style="margin-top:12px">`+P.vars.map((v,i)=>{
+    const p='vars.'+i;
+    let body=`<div class="row">${sel(p+'.type',[['number','number'],['bool','flag'],['string','text'],['formula','formula']],v.type,'data-r')}${sel(p+'.owner',[['','general'],...P.chars.map(c=>[c.id,c.name])],v.owner)}</div>`;
+    if(v.type==='number')body+=`<div class="row"><span class="dim">start</span>${num(p+'.init',v.init,'','style="width:70px"')}<span class="dim">min</span>${num(p+'.min',v.min,'','style="width:70px"')}<span class="dim">max</span>${num(p+'.max',v.max,'','style="width:70px"')}</div>`;
+    else if(v.type==='bool')body+=`<div class="row"><span class="dim">start</span>${sel(p+'.init',[['false','false'],['true','true']],String(v.init))}</div>`;
+    else if(v.type==='string')body+=`<div class="row"><span class="dim">start</span>${inp(p+'.init',v.init,'','class="grow"')}</div>`;
+    else body+=`<div class="row"><span class="dim">=</span>${inp(p+'.expr',v.expr,'kika_trust + mary_trust','class="grow"')}</div>`;
+    return `<div class="card"><div class="row">${inp(p+'.name',v.name,'Label','class="grow"')}<button class="x" data-a="delVar" data-arg="${v.key}">✕</button></div><div class="mono">key: ${esc(v.key)}</div>${body}<div class="row">${chk(p+'.show',v.show,'show in playtest HUD')}</div></div>`}).join('')+'</div>';
+}
+function viewItems(){
+  const items=P.items.map((it,i)=>{const p='items.'+i;return `<div class="card"><div class="row">${inp(p+'.name',it.name,'Item name','class="grow"')}<button class="x" data-a="delItem" data-arg="${it.id}">✕</button></div><div class="mono">id: ${esc(it.id)}</div>
+    ${inp(p+'.desc',it.desc,'Description','style="width:100%"')}<div class="row"><span class="dim">base price</span>${num(p+'.price',it.price,'','style="width:80px"')}<span class="dim">start with</span>${num(p+'.start',it.start,'','style="width:64px"')}</div></div>`}).join('');
+  const shops=P.shops.map((sh,i)=>{const p='shops.'+i;return `<div class="card"><div class="row">${inp(p+'.name',sh.name,'Shop name','class="grow"')}<button class="x" data-a="delShop" data-arg="${sh.id}">✕</button></div>
+    <div class="row"><span class="dim">pays with</span>${sel(p+'.currency',varOpts(v=>v.type==='number'),sh.currency)}<span class="dim">buys back at</span>${num(p+'.sell',sh.sell,'','style="width:64px"')}<span class="dim">% of base price (0 = no selling)</span></div>
+    ${sh.stock.map((s,j)=>`<div class="row">${sel(p+'.stock.'+j+'.item',itemOpts(),s.item)}<span class="dim">price</span>${num(p+'.stock.'+j+'.price',s.price,'','style="width:70px"')}<span class="dim">qty</span>${num(p+'.stock.'+j+'.qty',s.qty,'-1 = ∞','style="width:70px"')}<button class="x" data-a="del" data-arg="${p}.stock|${j}">✕</button></div>`).join('')}
+    <button class="mini" data-a="add" data-arg="${p}.stock|stock">+ stock item</button><div class="hint">Attach a shop to a scene in the scene editor.</div></div>`}).join('');
+  return `<h2>Items</h2><button class="pri" data-a="newItem">+ Item</button><div class="grid" style="margin-top:12px">${items}</div><h2 style="margin-top:20px">Shops</h2><button class="pri" data-a="newShop">+ Shop</button><div class="grid" style="margin-top:12px">${shops}</div>`;
+}
+function viewEndings(){
+  const cards=P.endings.map((e,i)=>{const p='endings.'+i;return `<div class="card"><div class="row">${inp(p+'.name',e.name,'Ending name','class="grow"')}<span class="dim">priority</span>${num(p+'.priority',e.priority,'','style="width:70px"')}${chk(p+'.fallback',e.fallback,'fallback')}<button class="x" data-a="delEnding" data-arg="${e.id}">✕</button></div>
+    <div class="mono">id: ${esc(e.id)} — link to it from a choice as “🏁 ${esc(e.name)}”, or use “⚖ Calculate ending”</div>
+    <textarea data-b="${p}.text" rows="3" placeholder="Epilogue text (supports Name: lines and {values})">${esc(e.text)}</textarea>${condEd(p,'Qualifies if')}</div>`}).join('');
+  let sim='';
+  if(ui.sim){const r=ui.sim;const rows=Object.entries(r.ends).sort((a,b)=>b[1].n-a[1].n).map(([id,o])=>`<tr><td>${esc(o.name)}</td><td>${(o.n/r.runs*100).toFixed(1)}%</td><td>${o.n}</td><td class="dim">${P.vars.filter(v=>o.sums[v.key]!==undefined&&v.show!==false).map(v=>esc(vlabel(v))+' '+(o.sums[v.key]/o.n).toFixed(1)).join(' · ')}</td></tr>`).join('');
+    const unreached=P.endings.filter(e=>!r.ends[e.id]).map(e=>esc(e.name));
+    sim=`<table><tr><th>Ending</th><th>%</th><th>runs</th><th>avg final stats</th></tr>${rows}</table>
+    ${unreached.length?`<div class="msg warn">Never reached: ${unreached.join(', ')}</div>`:''}
+    ${Object.entries(r.stuck).map(([m,n])=>`<div class="msg bad">${n}× stuck: ${esc(m)}</div>`).join('')}
+    ${r.loops?`<div class="msg warn">${r.loops}× hit the step cap (possible loop)</div>`:''}
+    ${P.time.on&&Object.keys(r.missed||{}).length?`<table><tr><th>Scene</th><th>Missed in</th></tr>${P.scenes.filter(e=>r.missed[e.id]).map(e=>`<tr><td>${esc(e.name)}</td><td>${(r.missed[e.id]/r.runs*100).toFixed(1)}% of runs</td></tr>`).join('')}</table>`:''}
+    <div class="hint">Average scenes per run: ${(r.steps/r.runs).toFixed(1)}. Players pick choices uniformly at random and buy shop items 50% of the time — it's a sanity check, not a player model.</div>`;}
+  return `<div class="card"><h2>🎲 Ending simulator</h2><div class="row"><span class="dim">Random playthroughs:</span><input type="number" id="simN" value="${ui.simN}" style="width:90px"><button class="pri" data-a="runSim">Run</button></div>${sim}</div>
+  <div class="hint" style="margin-bottom:10px">Ending calc: highest priority qualifying ending wins; if none qualify, the fallback is used. Ties go to the earlier card.</div>
+  <button class="pri" data-a="newEnding">+ Ending</button><div style="margin-top:12px">${cards}</div>`;
+}
+
+/* ---- validation + map ---- */
+function validate(){
+  const out=[];const bad=(m,go)=>out.push({l:'bad',m,go}),warn=(m,go)=>out.push({l:'warn',m,go});
+  if(!P.scenes.length){bad('No scenes yet.');return out}
+  if(!sceneById(P.start))bad('No valid start scene (use “make start” in a scene).');
+  const tOk=t=>t==='@calc'||(t&&t.startsWith('end:')&&endById(t.slice(4)))||sceneById(t);
+  const checkConds=(o,where,go)=>(o.conds||[]).forEach(c=>{
+    if(c.t==='var'&&!varByKey(c.key))bad(where+': condition uses missing variable "'+c.key+'"',go);
+    if(c.t==='item'&&!itemById(c.id))bad(where+': condition uses missing item',go);
+    if(c.t==='visited'&&!sceneById(c.id))bad(where+': condition uses missing scene',go);
+    if(c.t==='expr'){try{ev(newState(),c.expr||'true')}catch(e){bad(where+': expression error — '+e.message,go)}}
+  });
+  const md=mapData();
+  P.scenes.forEach(s=>{
+    checkConds({conds:[]},'',s.id);
+    s.choices.forEach(c=>{
+      if(!c.target)bad(`“${s.name}”: choice “${c.text}” has no target`,s.id);
+      else if(!tOk(c.target))bad(`“${s.name}”: choice “${c.text}” points to a missing target`,s.id);
+      checkConds(c,`“${s.name}” → “${c.text}”`,s.id);
+    });
+    s.next.forEach(r=>{if(!tOk(r.target))bad(`“${s.name}”: a “then go to” rule has no valid target`,s.id);checkConds(r,`“${s.name}” rule`,s.id)});
+    if(!s.choices.length&&!s.next.length&&!(s.hub&&P.time.on&&s.waitText))warn(`“${s.name}” is a dead end (no choices, no next rule).`,s.id);
+    if(s.choices.length&&!s.next.length&&s.choices.every(c=>(c.conds||[]).length||c.once))warn(`“${s.name}”: every choice is conditional/one-time and there is no fallback rule — possible softlock.`,s.id);
+    if(s.shop&&!P.shops.some(x=>x.id===s.shop))bad(`“${s.name}”: shop missing`,s.id);
+    if(!md.depth[s.id])if(s.id!==P.start&&md.depth[s.id]===undefined)warn(`“${s.name}” is unreachable from the start.`,s.id);
+  });
+  P.endings.forEach(e=>{checkConds(e,`Ending “${e.name}”`);if(md.depth['end:'+e.id]===undefined)warn(`Ending “${e.name}” isn't linked from anywhere.`)});
+  if(md.calcUsed&&!P.endings.some(e=>e.fallback))warn('You use “Calculate ending” but no ending is marked fallback — players could hit a dead end.');
+  P.vars.filter(v=>v.type==='formula').forEach(v=>{try{ev(newState(),v.expr||'0')}catch(e){bad(`Formula “${v.name}”: ${e.message}`)}});
+  P.shops.forEach(sh=>{if(!varByKey(sh.currency))bad(`Shop “${sh.name}”: currency variable missing`);sh.stock.forEach(it=>{if(!itemById(it.item))bad(`Shop “${sh.name}”: stock item missing`)})});
+  if(P.time.on){
+    const evs=P.scenes.filter(e=>!e.hub&&isEvent(e)),hubs=P.scenes.filter(e=>e.hub);
+    if(evs.length&&!hubs.length)warn('Scenes have time windows but no scene is marked as a hub, so nothing will ever list them.');
+    if(hubs.length&&!evs.length)warn('You have a hub but no scene has a time window.');
+    if(!P.time.end)warn('No "when time runs out, go to" target set (⏳ Time tab). Time will just stop at the last slot.');
+    hubs.forEach(h=>{if(!h.waitText&&!h.choices.length&&!h.next.length)warn(`Hub “${h.name}” has no “pass time” button, choices or next rule: it can dead-end when no event is available.`,h.id)});
+    evs.forEach(e=>{
+      if(e.winFrom!==''&&e.winTo!==''&&Number(e.winFrom)>Number(e.winTo))bad(`“${e.name}”: its window starts after it ends.`,e.id);
+      if(e.forced&&e.repeat)warn(`“${e.name}” is forced and repeatable, so it would trigger every time a hub opens.`,e.id);
+    });
+  }
+  return out;
+}
+function mapData(){
+  const nodes={},edges=[];let calcUsed=false;
+  P.scenes.forEach(s=>nodes[s.id]={id:s.id,label:s.name,kind:'scene',chap:s.chapter,shop:!!s.shop});
+  P.endings.forEach(e=>nodes['end:'+e.id]={id:'end:'+e.id,label:e.name,kind:'end'});
+  const add=(f,t,label,dash,kind)=>{if(!t)return;if(t==='@calc')calcUsed=true;edges.push({from:f,to:t,label,dash,kind})};
+  P.scenes.forEach(s=>{s.choices.forEach(c=>add(s.id,c.target,c.text,(c.conds||[]).length>0||c.once,'c'));s.next.forEach(r=>add(s.id,r.target,'then',(r.conds||[]).length>0,'n'))});
+  if(P.time.on){
+    const hubs=P.scenes.filter(x=>x.hub),evs=P.scenes.filter(x=>!x.hub&&isEvent(x));
+    hubs.forEach(h=>evs.forEach(e=>edges.push({from:h.id,to:e.id,label:'event',dash:true,kind:'e'})));
+    if(P.time.end){
+      nodes['@time']={id:'@time',label:'⏳ time runs out',kind:'calc'};
+      (hubs.length?hubs:[sceneById(P.start)].filter(Boolean)).forEach(h=>edges.push({from:h.id,to:'@time',label:'',dash:true,kind:'k'}));
+      add('@time',P.time.end,'',true,'k');
+    }
+  }
+  if(calcUsed){nodes['@calc']={id:'@calc',label:'⚖ ending calc',kind:'calc'};P.endings.forEach(e=>edges.push({from:'@calc',to:'end:'+e.id,label:'',dash:true,kind:'k'}))}
+  const depth={},q=[];
+  if(nodes[P.start]){depth[P.start]=0;q.push(P.start)}
+  while(q.length){const id=q.shift();edges.filter(e=>e.from===id&&nodes[e.to]&&depth[e.to]===undefined).forEach(e=>{depth[e.to]=depth[id]+1;q.push(e.to)})}
+  return {nodes,edges,depth,calcUsed};
+}
+function viewMap(){
+  const checks=validate();
+  const chk=checks.length?checks.map(c=>`<div class="msg ${c.l}">${esc(c.m)}${c.go?` <a data-a="selSceneGo" data-arg="${c.go}">open</a>`:''}</div>`).join(''):'<div class="msg ok">No problems found. Suspiciously tidy.</div>';
+  const md=mapData();const ids=Object.keys(md.nodes);
+  const maxD=Math.max(0,...Object.values(md.depth));
+  const cols={};
+  ids.forEach(id=>{const d=md.depth[id]===undefined?maxD+1:md.depth[id];(cols[d]=cols[d]||[]).push(id)});
+  const W=170,H=40,GX=70,GY=22,pos={};
+  let maxRows=1;
+  Object.keys(cols).forEach(d=>{maxRows=Math.max(maxRows,cols[d].length);cols[d].forEach((id,r)=>pos[id]={x:20+d*(W+GX),y:20+r*(H+GY),d:+d}) });
+  const w=20+(Object.keys(cols).length?Math.max(...Object.keys(cols).map(Number))+1:1)*(W+GX),h=40+maxRows*(H+GY);
+  const trunc=(s,n)=>String(s).length>n?String(s).slice(0,n-1)+'…':String(s);
+  let svg=`<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg"><defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6b7a90"/></marker></defs>`;
+  md.edges.forEach(e=>{const a=pos[e.from],b=pos[e.to];if(!a||!b)return;
+    const x1=a.x+W,y1=a.y+H/2,x2=b.x,y2=b.y+H/2;
+    const col=e.kind==='n'?'#bb9af7':e.kind==='k'?'#e3b341':e.kind==='e'?'#5ad1c7':'#6b7a90';
+    svg+=`<path d="M${x1} ${y1}C${x1+50} ${y1},${x2-50} ${y2},${x2} ${y2}" fill="none" stroke="${col}" stroke-width="1.4" ${e.dash?'stroke-dasharray="5 4"':''} marker-end="url(#ar)" opacity=".8"><title>${esc(e.label)}</title></path>`});
+  ids.forEach(id=>{const n=md.nodes[id],p=pos[id];const un=md.depth[id]===undefined;
+    const fill=n.kind==='end'?'#2a2412':n.kind==='calc'?'#2a2412':'#161b22';
+    const stroke=un?'#ff7b72':n.kind==='scene'?chapColor(n.chap):'#e3b341';
+    svg+=`<g class="node" data-a="mapGo" data-arg="${esc(id)}"><rect x="${p.x}" y="${p.y}" width="${W}" height="${H}" rx="9" fill="${fill}" stroke="${stroke}"/><text x="${p.x+10}" y="${p.y+H/2+4}">${esc((P.start===id?'⭐ ':n.kind==='end'?'🏁 ':n.shop?'🛒 ':'')+trunc(n.label,22))}</text></g>`});
+  svg+='</svg>';
+  return `<h2>Checks</h2>${chk}<h2 style="margin-top:16px">Map</h2><div class="hint" style="margin-bottom:6px">Dashed = conditional or one-time · purple = “then go to” · red outline = unreachable. Click a node to edit it.</div><div id="mapwrap">${svg}</div>`;
+}
+
+/* ---- render ---- */
+function render(){
+  const ed=$('#editor'),sc=ed.scrollTop;
+  $('#tabs').innerHTML=TABS.map(([k,l])=>`<button class="tab ${ui.tab===k?'on':''}" data-a="tab" data-arg="${k}">${l}</button>`).join('');
+  const V={scenes:viewScenes,chars:viewChars,vars:viewVars,time:viewTime,items:viewItems,endings:viewEndings,map:viewMap};
+  ed.innerHTML=V[ui.tab]();
+  ed.scrollTop=sc;
+  document.querySelector('[data-b="title"]').value=P.title;
+  if(ui.play)renderPlay();
+}
+
+/* ---- play ---- */
+function renderPlay(){
+  if(!st){st=newState();st.warn=new Set();enter(st,P.start)}
+  const chips=[];if(P.time.on)chips.push(`<span class="chip" style="border-color:#5ad1c7">⏳ <b>${esc(timeLabel(st.t))}</b></span>`);
+  P.vars.forEach(v=>{if(v.show===false)return;let val;
+    if(v.type==='formula'){try{val=fmt(ev(st,v.expr||'0'))}catch(e){val='⚠'}}else val=st.vars[v.key];
+    if(v.type==='bool')val=val?'✓':'✗';
+    chips.push(`<span class="chip">${esc(vlabel(v))}: <b>${esc(val)}</b></span>`)});
+  P.items.forEach(i=>{if(st.inv[i.id]>0)chips.push(`<span class="chip item">🎒 ${esc(i.name)} ×${st.inv[i.id]}</span>`)});
+  $('#hud').innerHTML=chips.join('')||'<small>no stats</small>';
+  const dbg=$('#dbg');dbg.style.display=ui.dbg?'block':'none';
+  if(ui.dbg){
+    const picked=pickEnding(st);
+    dbg.innerHTML=`<b>Edit state</b><table>`+P.vars.filter(v=>v.type!=='formula').map(v=>`<tr><td>${esc(vlabel(v))}</td><td>${v.type==='bool'?`<input type="checkbox" data-pv="${v.key}" ${st.vars[v.key]?'checked':''}>`:`<input data-pv="${v.key}" value="${esc(st.vars[v.key])}" style="width:100px">`}</td></tr>`).join('')+'</table>'+
+    `<div style="margin-top:6px"><b>Inventory</b> ${P.items.map(i=>`<span class="chip">${esc(i.name)} ${st.inv[i.id]||0} <a data-a="inv" data-arg="${i.id}|-1" style="cursor:pointer">−</a> <a data-a="inv" data-arg="${i.id}|1" style="cursor:pointer">＋</a></span>`).join('')||'<small>no items</small>'}</div>`+
+    `${P.time.on?`<div style="margin-top:6px"><b>Time</b> <select data-ptime>${timeOpts().map(([v,l])=>`<option value="${v}"${v===st.t?' selected':''}>${esc(l)}</option>`).join('')}</select> <small>missed: ${esc(missedIds(st).map(i=>sceneById(i)?.name||i).join(', ')||'none')}</small></div>`:''}<div style="margin-top:6px"><b>Jump to</b> <select data-j>${'<option value="">—</option>'+P.scenes.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></div>`+
+    `<div style="margin-top:6px"><b>Ending right now</b><br>${P.endings.map(e=>`${picked&&picked.id===e.id?'👉 ':'&nbsp;&nbsp;&nbsp;'}${esc(e.name)} — ${e.fallback?'fallback':condsOk(st,e)?'✓ qualifies':'✗'}`).join('<br>')||'<small>none</small>'}</div>`+
+    (st.warn&&st.warn.size?`<div class="warnbox" style="margin-top:6px">${[...st.warn].map(esc).join('<br>')}</div>`:'');
+  }
+  $('#log').innerHTML=st.log.map(e=>{switch(e.k){
+    case 'scene':return `<div class="lg-scene">— ${esc(e.name)}${e.chapter?' · '+esc(e.chapter):''}${e.when?' · ⏳ '+esc(e.when):''} —</div>`;
+    case 'line':{const c=charById(e.who);return `<div class="lg-line">${c?`<span class="who" style="color:${c.color}">${esc(c.name)}</span>`:''}${esc(e.text)}</div>`}
+    case 'fx':case 'sys':return `<div class="lg-fx">${esc(e.text)}</div>`;
+    case 'choice':return `<div class="lg-choice">▸ ${esc(e.text)}</div>`;
+    case 'end':return `<div class="lg-end"><b>🏁 ${esc(e.name)}</b><div>${esc(e.text)}</div></div>`}return ''}).join('');
+  let c='';
+  if(st.pending.length)c=`<button class="big" data-a="cont">Continue ▸</button><button class="mini" data-a="skip">skip to choices</button>`;
+  else if(st.over)c=`<div class="end-banner">THE END — ${esc(st.over.name)}</div><button class="big" data-a="restart">Play again</button>`;
+  else if(st.stuck||!sceneById(st.scene))c=`<div class="warnbox">Stuck: ${esc(st.stuck||'no scene')}</div>`;
+  else{
+    const sc=sceneById(st.scene);
+    if(sc.shop)c+=shopHtml(sc);
+    const cs=choiceStates(st,sc);
+    cs.filter(x=>x.ok||(x.c.locked==='show'&&!x.used)).forEach(x=>{
+      c+=x.ok?`<button class="choice" data-a="pick" data-arg="${x.c.id}">${esc(interp(st,x.c.text))}</button>`
+        :`<button class="choice locked" disabled>🔒 ${esc(x.c.text)} <small>(${esc(describeConds(x.c)||'used')})</small></button>`});
+    if(!cs.some(x=>x.ok)){const r=resolveNext(st,sc);
+      c+=r&&r.target?`<button class="big" data-a="nxt">Continue ▸</button>`:`<div class="warnbox">Dead end: nothing available and no matching “then go to” rule.</div>`}
+  }
+  $('#ctl').innerHTML=c;
+  const lg=$('#log');lg.scrollTop=lg.scrollHeight;
+}
+function shopHtml(sc){
+  const sh=P.shops.find(s=>s.id===sc.shop);if(!sh)return '';
+  const cur=sh.currency||'gold';
+  let h=`<div class="shop"><b>🛒 ${esc(sh.name)}</b> <span class="dim">(${esc(cur)}: ${Number(st.vars[cur])||0})</span>`;
+  sh.stock.forEach((it,i)=>{const item=itemById(it.item);if(!item)return;const q=qtyLeft(st,sh,it);
+    h+=`<div class="shoprow"><span>${esc(item.name)} <small>${esc(item.desc||'')}</small></span><span>${q>=0?'×'+q+' · ':''}${esc(it.price)} <button class="mini" data-a="buy" data-arg="${sh.id}|${i}" ${canBuy(st,sh,it)?'':'disabled'}>Buy</button></span></div>`});
+  if(Number(sh.sell)>0)P.items.forEach(item=>{if((st.inv[item.id]||0)>0)h+=`<div class="shoprow"><span>${esc(item.name)} ×${st.inv[item.id]}</span><span>+${sellPrice(sh,item)} <button class="mini" data-a="sell" data-arg="${sh.id}|${item.id}">Sell</button></span></div>`});
+  return h+'</div>';
+}
+function snap(){st.snaps.push(JSON.stringify(st,(k,v)=>k==='snaps'||k==='warn'?undefined:v));if(st.snaps.length>200)st.snaps.shift()}
+function startPlay(from){st=newState();st.warn=new Set();ui.play=true;document.body.classList.add('play-open');enter(st,from||P.start);renderPlay()}
+
+/* ---- actions ---- */
+const A={
+  tab:k=>{ui.tab=k;render()},
+  add:arg=>{const[path,kind]=arg.split('|');const fv=P.vars.find(v=>v.type!=='formula');
+    const T={cond:()=>P.vars[0]?{t:'var',key:P.vars[0].key,op:'>=',val:'1'}:{t:'expr',expr:'true'},
+      fx:()=>fv?{t:'add',key:fv.key,val:'1'}:{t:'give',id:P.items[0]?.id||'',qty:1},
+      choice:()=>({id:uid(),text:'New choice',target:'',locked:'hide',once:false,conds:[],cmode:'all',fx:[]}),
+      next:()=>({target:'',conds:[],cmode:'all'}),
+      stock:()=>({item:P.items[0]?.id||'',price:10,qty:-1})};
+    getPath(path).push(T[kind]());render()},
+  del:arg=>{const[path,i]=arg.split('|');getPath(path).splice(+i,1);dirty();render()},
+  mv:arg=>{const[path,i,d]=arg.split('|');const L=getPath(path),a=+i,b=a+ +d;if(b<0||b>=L.length)return;[L[a],L[b]]=[L[b],L[a]];dirty();render()},
+  selScene:id=>{ui.scene=id;render()},
+  selSceneGo:id=>{ui.scene=id;ui.tab='scenes';render()},
+  mapGo:id=>{if(id.startsWith('end:')){ui.tab='endings'}else if(sceneById(id)){ui.scene=id;ui.tab='scenes'}render()},
+  newScene:()=>{const n=P.scenes.length+1;const id=uniq(slug('scene_'+n),P.scenes.map(s=>s.id));
+    P.scenes.push({id,name:'Scene '+n,chapter:'',text:'',note:'',shop:'',fx:[],choices:[],next:[]});if(!P.start)P.start=id;ui.scene=id;dirty();render()},
+  dupScene:()=>{const s=sceneById(ui.scene);if(!s)return;const c=JSON.parse(JSON.stringify(s));c.id=uniq(s.id+'_copy',P.scenes.map(x=>x.id));c.name=s.name+' (copy)';c.choices.forEach(x=>x.id=uid());P.scenes.push(c);ui.scene=c.id;dirty();render()},
+  delScene:()=>{const s=sceneById(ui.scene);if(!s||!confirm('Delete scene "'+s.name+'"? Links to it will break.'))return;P.scenes=P.scenes.filter(x=>x!==s);if(P.start===s.id)P.start=P.scenes[0]?.id||'';ui.scene=null;dirty();render()},
+  setStart:()=>{P.start=ui.scene;dirty();render()},
+  renameId:()=>{const sc=sceneById(ui.scene);if(!sc)return;const n=prompt('New id (letters, numbers, underscores — becomes the Ren\'Py label):',sc.id);if(!n)return;
+    const nid=slug(n);if(nid===sc.id)return;if(sceneById(nid)){alert('That id already exists.');return}
+    const old=sc.id;sc.id=nid;if(P.start===old)P.start=nid;
+    const fix=o=>(o.conds||[]).forEach(c=>{if(c.t==='visited'&&c.id===old)c.id=nid;if(c.t==='expr'&&c.expr)c.expr=c.expr.split('"'+old+'"').join('"'+nid+'"')});
+    P.scenes.forEach(s=>{s.choices.forEach(c=>{if(c.target===old)c.target=nid;fix(c)});s.next.forEach(r=>{if(r.target===old)r.target=nid;fix(r)})});
+    P.endings.forEach(fix);ui.scene=nid;dirty();render()},
+  playFrom:id=>startPlay(id),
+  newChar:()=>{const n=prompt('Character name?');if(!n)return;const id=uniq(slug(n),P.chars.map(c=>c.id));
+    P.chars.push({id,name:n.trim(),color:'hsl',notes:''});P.chars[P.chars.length-1].color=['#7aa2f7','#f7768e','#9ece6a','#e0af68','#bb9af7','#7dcfff'][P.chars.length%6];dirty();render()},
+  delChar:id=>{if(!confirm('Delete this character? Their stats become general variables.'))return;P.chars=P.chars.filter(c=>c.id!==id);P.vars.forEach(v=>{if(v.owner===id)v.owner=''});dirty();render()},
+  newStat:id=>{const n=prompt('Stat name (e.g. affection)?');if(!n)return;const key=uniq(slug(id+'_'+n),P.vars.map(v=>v.key));
+    P.vars.push({key,name:n.trim(),type:'number',init:0,min:0,max:'',owner:id,expr:'',show:true});dirty();render()},
+  newVar:t=>{const n=prompt('Name?');if(!n)return;const key=uniq(slug(n),P.vars.map(v=>v.key));
+    P.vars.push({key,name:n.trim(),type:t,init:t==='bool'?'false':t==='string'?'':0,min:'',max:'',owner:'',expr:'',show:t!=='bool'});dirty();render()},
+  delVar:k=>{if(!confirm('Delete variable "'+k+'"? Conditions using it will break.'))return;P.vars=P.vars.filter(v=>v.key!==k);dirty();render()},
+  newItem:()=>{const n=prompt('Item name?');if(!n)return;P.items.push({id:uniq(slug(n),P.items.map(i=>i.id)),name:n.trim(),desc:'',price:10,start:0});dirty();render()},
+  delItem:id=>{if(!confirm('Delete this item?'))return;P.items=P.items.filter(i=>i.id!==id);P.shops.forEach(s=>s.stock=s.stock.filter(x=>x.item!==id));dirty();render()},
+  newShop:()=>{const n=prompt('Shop name?');if(!n)return;P.shops.push({id:uniq(slug(n),P.shops.map(s=>s.id)),name:n.trim(),currency:'gold',sell:50,stock:[]});dirty();render()},
+  delShop:id=>{if(!confirm('Delete this shop?'))return;P.shops=P.shops.filter(s=>s.id!==id);P.scenes.forEach(s=>{if(s.shop===id)s.shop=''});dirty();render()},
+  newEnding:()=>{const n=prompt('Ending name?');if(!n)return;P.endings.push({id:uniq(slug(n),P.endings.map(e=>e.id)),name:n.trim(),text:'',priority:0,fallback:false,conds:[],cmode:'all'});dirty();render()},
+  delEnding:id=>{if(!confirm('Delete this ending?'))return;P.endings=P.endings.filter(e=>e.id!==id);dirty();render()},
+  runSim:()=>{ui.simN=Math.max(1,Math.min(20000,Number($('#simN').value)||500));ui.sim=simulate(ui.simN);render()},
+  play:()=>startPlay(),
+  closePlay:()=>{ui.play=false;document.body.classList.remove('play-open')},
+  restart:()=>startPlay(),
+  dbgToggle:()=>{ui.dbg=!ui.dbg;renderPlay()},
+  cont:()=>{if(!st||!st.pending.length)return;const l=st.pending.shift();st.log.push({k:'line',who:l.who?l.who.id:null,text:l.text});renderPlay()},
+  skip:()=>{while(st.pending.length){const l=st.pending.shift();st.log.push({k:'line',who:l.who?l.who.id:null,text:l.text})}renderPlay()},
+  pick:cid=>{const sc=sceneById(st.scene);if(!sc)return;snap();pickChoice(st,sc,cid);renderPlay()},
+  nxt:()=>{const sc=sceneById(st.scene);const r=resolveNext(st,sc);if(!r||!r.target)return;snap();goNext(st,sc,r);renderPlay()},
+  back:()=>{if(!st||!st.snaps.length)return;const sn=st.snaps,w=st.warn;st=JSON.parse(sn.pop());st.snaps=sn;st.warn=w;renderPlay()},
+  buy:arg=>{const[sid,i]=arg.split('|');const sh=P.shops.find(s=>s.id===sid);const m=doBuy(st,sh,sh.stock[+i]);if(m)st.log.push({k:'fx',text:m});renderPlay()},
+  sell:arg=>{const[sid,iid]=arg.split('|');const sh=P.shops.find(s=>s.id===sid);const m=doSell(st,sh,iid);if(m)st.log.push({k:'fx',text:m});renderPlay()},
+  inv:arg=>{const[id,d]=arg.split('|');st.inv[id]=Math.max(0,(st.inv[id]||0)+ +d);renderPlay()},
+  exportJson:()=>download(slug(P.title)+'.json',JSON.stringify(P,null,2),'application/json'),
+  exportRpy:()=>{const errs=validate().filter(c=>c.l==='bad');if(errs.length&&!confirm(errs.length+' problem(s) found in Map & Checks. Export anyway?'))return;download(slug(P.title)+'.rpy',exportRpy())},
+  importJson:()=>$('#file').click(),
+  demo:()=>{if(!confirm('Replace the current project with the demo?'))return;P=demoProject();ui.scene=null;ui.sim=null;st=null;dirty();render()},
+  newProject:()=>{if(!confirm('Start a blank project? (Export JSON first if you want to keep this one.)'))return;P=normalize(blank());ui.scene=null;ui.sim=null;st=null;dirty();render()}
+};
+
+/* ---- events ---- */
+const ops={var:['==','!=','>','>=','<','<='],visited:['seen','unseen']};
+function fixRow(kind,o){
+  if(kind==='cond'){
+    if(o.t==='var'){if(!varByKey(o.key))o.key=P.vars[0]?.key||'';if(!ops.var.includes(o.op))o.op='>=';o.val??='1'}
+    if(o.t==='item'){if(!itemById(o.id))o.id=P.items[0]?.id||'';if(!ops.var.includes(o.op))o.op='>=';o.val=1}
+    if(o.t==='visited'){if(!sceneById(o.id))o.id=P.scenes[0]?.id||'';if(!ops.visited.includes(o.op))o.op='seen'}
+    if(o.t==='expr')o.expr??='';
+  }else{
+    const fv=P.vars.find(v=>v.type!=='formula');
+    if(o.t==='add'||o.t==='set'){if(!varByKey(o.key)||varByKey(o.key).type==='formula')o.key=fv?.key||'';o.val??='1'}
+    else{if(!itemById(o.id))o.id=P.items[0]?.id||'';o.qty??=1}
+  }
+}
+function onBound(t,rerender){
+  const path=t.dataset.b;
+  let v=t.type==='checkbox'?t.checked:t.dataset.n!==undefined?(t.value===''?'':Number(t.value)):t.value;
+  setPath(path,v);
+  const ks=path.split('.'),last=ks.pop(),o=ks.length?getPath(ks.join('.')):P;
+  if(last==='t'&&(ks.includes('conds')||ks.includes('fx')))fixRow(ks.includes('conds')?'cond':'fx',o);
+  if(last==='type'&&ks[0]==='vars')o.init=o.type==='bool'?'false':o.type==='string'?'':0;
+  document.querySelectorAll('[data-lf="'+path+'"]').forEach(n=>n.textContent=t.value);
+  dirty();
+  if(rerender)render();
+}
+document.addEventListener('input',e=>{const t=e.target;if(!t.dataset||t.dataset.b===undefined||t.tagName==='SELECT'||t.type==='color'&&false)return;onBound(t,false)});
+document.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.b!==undefined&&(t.tagName==='SELECT')){onBound(t,t.dataset.r!==undefined||true);return}
+  if(t.dataset&&t.dataset.b!==undefined&&(t.dataset.r!==undefined||t.dataset.rr!==undefined)&&t.tagName!=='SELECT')render();
+  if(t.dataset&&t.dataset.ptime!==undefined){st.t=Number(t.value);renderPlay()}
+  if(t.dataset&&t.dataset.pv){const v=varByKey(t.dataset.pv);let x;if(v.type==='bool')x=t.checked;else if(v.type==='number')x=Number(t.value)||0;else x=t.value;st.vars[v.key]=x;renderPlay()}
+  if(t.dataset&&t.dataset.j!==undefined&&t.value){startPlay(t.value);ui.dbg=true;renderPlay()}});
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t)return;const f=A[t.dataset.a];if(f)f(t.dataset.arg,t)});
+document.addEventListener('keydown',e=>{
+  if(!ui.play||!st||!st.pending.length)return;
+  if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;
+  if(e.key===' '||e.key==='Enter'){e.preventDefault();A.cont()}
+});
+$('#file').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{const j=JSON.parse(r.result);if(!Array.isArray(j.scenes))throw new Error('no scenes array');P=normalize(j);ui.scene=null;ui.sim=null;st=null;dirty();render()}catch(err){alert('Could not import: '+err.message)}};
+  r.readAsText(f);e.target.value='';
+});
+
+/* ---- boot ---- */
+(function(){
+  let loaded=null;
+  try{const s=localStorage.getItem(KEY);if(s)loaded=normalize(JSON.parse(s))}catch(e){}
+  P=loaded||demoProject();
+  render();
+})();
+</script>
+</body>
+</html>
